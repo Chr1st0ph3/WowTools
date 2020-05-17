@@ -1,0 +1,106 @@
+#!/usr/bin/python3
+#-------------------------------------------------------------------------------
+# WowTools Shell
+#
+# Christophe Cremy, May 2020
+#-------------------------------------------------------------------------------
+
+import argparse
+import sys
+import wow_base
+
+gVersion = "v0.1.a, 10 May 2020"
+
+gModes = {
+    "base" : {
+        "prompt" : "> ",
+        "next" : "null",
+        "sub" : "net"
+    },
+    "net" : {
+        "prompt" : "net> ",
+        "next" : "null",
+        "sub" : "ipv4"
+    },
+    "ipv4" : {
+        "prompt" : "net/ipv4> ",
+        "next" : "ipv6",
+        "sub" : "null"
+    },
+    "ipv6" : {
+        "prompt" : "net/ipv6> ",
+        "next" : "null",
+        "sub" : "null"
+    }
+}
+
+gMode = "base"
+
+wow_commands = {
+    "base" : {
+        "help" : "wow_base.help",
+        "exit" : "wow_base.exit",
+        "showMode" : "wow_base.showMode",
+        "up" : "wow_base.up"
+    },
+    "net" : {
+        "showMode" : "wow_net.showMode",
+        "up" : "wow_net.up"
+    },
+    "ipv4" : {
+        "showMode" : "wow_ipv4.showMode",
+        "up" : "wow_ipv4.up"
+    },
+    "ipv6" : {
+        "showMode" : "wow_ipv6.showMode",
+        "up" : "wow_ipv6.up"
+    }
+}
+
+
+#
+# Functions
+# 
+
+def logDebug(arg):
+    print("[DBG] {}".format(arg))
+
+
+def showBanner():
+    print(" _    _               _____ _          _ _ ")
+    print("| |  | |             /  ___| |        | | |")
+    print("| |  | | _____      _\ `--.| |__   ___| | |")
+    print("| |/\| |/ _ \ \ /\ / /`--. \ '_ \ / _ \ | |")
+    print("\  /\  / (_) \ V  V //\__/ / | | |  __/ | |")
+    print(" \/  \/ \___/ \_/\_/ \____/|_| |_|\___|_|_|")
+    print("")
+    print("WowShell " + gVersion)
+    print("----")
+
+
+def main_loop():
+    while True:
+        command = input(gModes[gMode]["prompt"])
+        if not command in wow_commands[gMode]:
+            print("Unsupported command '" + command + "' in mode '" + gMode + "'")
+        else:
+            func_call = eval(wow_commands[gMode][command])
+            func_call()
+
+
+def main():
+
+    parser = argparse.ArgumentParser(prog="WowShell", description="WowTools interactive Shell")
+    parser.add_argument("--version", action="version", version="%(prog)s(wosh)" + gVersion)
+    parser.parse_args()
+
+    showBanner()
+    return main_loop()
+   
+
+#
+# Main
+# 
+
+if __name__ == "__main__":
+    sys.exit(main())
