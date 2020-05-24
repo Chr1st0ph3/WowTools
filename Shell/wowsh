@@ -6,101 +6,84 @@
 #-------------------------------------------------------------------------------
 
 import argparse
+import cmd
 import sys
-import wow_base
 
-gVersion = "v0.1.a, 10 May 2020"
+from modules import wow_net as wnet
 
-gModes = {
-    "base" : {
-        "prompt" : "> ",
-        "next" : "null",
-        "sub" : "net"
-    },
-    "net" : {
-        "prompt" : "net> ",
-        "next" : "null",
-        "sub" : "ipv4"
-    },
-    "ipv4" : {
-        "prompt" : "net/ipv4> ",
-        "next" : "ipv6",
-        "sub" : "null"
-    },
-    "ipv6" : {
-        "prompt" : "net/ipv6> ",
-        "next" : "null",
-        "sub" : "null"
-    }
-}
+#
+# Globals
+#
 
-gMode = "base"
-
-wow_commands = {
-    "base" : {
-        "help" : "wow_base.help",
-        "exit" : "wow_base.exit",
-        "showMode" : "wow_base.showMode",
-        "up" : "wow_base.up"
-    },
-    "net" : {
-        "showMode" : "wow_net.showMode",
-        "up" : "wow_net.up"
-    },
-    "ipv4" : {
-        "showMode" : "wow_ipv4.showMode",
-        "up" : "wow_ipv4.up"
-    },
-    "ipv6" : {
-        "showMode" : "wow_ipv6.showMode",
-        "up" : "wow_ipv6.up"
-    }
+gVersion = "v0.1.a, 23 May 2020"
+gSupportedvariables = {
+    "ipv4" : "WowIPv4Address"
 }
 
 
 #
-# Functions
-# 
+# Classes
+#
 
-def logDebug(arg):
-    print("[DBG] {}".format(arg))
+class WowShell(cmd.Cmd):
+    variables = {}
+    prompt = "wowsh> "
+    intro  = " _    _               _____ _          _ _\n"
+    intro += "| |  | |             /  ___| |        | | |\n"
+    intro += "| |  | | _____      _\ `--.| |__   ___| | |\n"
+    intro += "| |/\| |/ _ \ \ /\ / /`--. \ '_ \ / _ \ | |\n"
+    intro += "\  /\  / (_) \ V  V //\__/ / | | |  __/ | |\n"
+    intro += " \/  \/ \___/ \_/\_/ \____/|_| |_|\___|_|_|\n"
+    intro += "\n"
+    intro += "WowShell " + gVersion + "\n"
+    intro += "----\n"
 
+    def do_exit(self, inp):
+        print("WowShell tells you Bye!")
+        return True
+ 
+    def default(self, text):
+        operation = text.split()[0]
+        print(f"operation -> {operation}")
+        print(f"text -> {text}")
+        try:
+            getattr(self, operation)(text)
+        except Exception:
+            print(f"Unsupported operation '{operation}'")
 
-def showBanner():
-    print(" _    _               _____ _          _ _ ")
-    print("| |  | |             /  ___| |        | | |")
-    print("| |  | | _____      _\ `--.| |__   ___| | |")
-    print("| |/\| |/ _ \ \ /\ / /`--. \ '_ \ / _ \ | |")
-    print("\  /\  / (_) \ V  V //\__/ / | | |  __/ | |")
-    print(" \/  \/ \___/ \_/\_/ \____/|_| |_|\___|_|_|")
-    print("")
-    print("WowShell " + gVersion)
-    print("----")
+    def do_set(self, text):
+        args = text.split()
+        if len(args) != 2:
+            print(f"Syntax error: set <variable_name> <variable_value>")
+            return
 
+        variable_name = args[0]
+        if not variable_name in gSupportedvariables:
+            print(f"Unsupported variable name '{variable_name}")
+            return            
 
-def main_loop():
-    while True:
-        command = input(gModes[gMode]["prompt"])
-        if not command in wow_commands[gMode]:
-            print("Unsupported command '" + command + "' in mode '" + gMode + "'")
+        variable_value = args[1]
+        variable_object = getattr(wnet, gSupportedvariables[variable_name])(value = str(variable_value))
+        self.variables[variable_name] = {
+            "value" : variable_value,
+            "object" : variable_object
+        }
+
+    def do_show(self, arg):
+        if arg in self.variables:
+            self.variables[arg]["object"].show()
         else:
-            func_call = eval(wow_commands[gMode][command])
-            func_call()
+            print(f"Unknown variable '{arg}'")
 
+    do_EOF = do_exit
 
-def main():
-
-    parser = argparse.ArgumentParser(prog="WowShell", description="WowTools interactive Shell")
-    parser.add_argument("--version", action="version", version="%(prog)s(wosh)" + gVersion)
-    parser.parse_args()
-
-    showBanner()
-    return main_loop()
-   
 
 #
 # Main
 # 
 
-if __name__ == "__main__":
-    sys.exit(main())
+sys.path.append(".")
+sys.path.append("modules")
+
+if __name__ == '__main__':
+    WowShell().cmdloop()
